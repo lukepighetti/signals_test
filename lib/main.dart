@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_solidart/flutter_solidart.dart';
+import 'package:signals_test/state.dart';
 
 void main() {
   runApp(const MyApp());
@@ -30,40 +32,77 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
+    // I think we should be able to have a top level widget that automatically
+    // subscribes to all of the Signals / Computed / Resources accessed
+    // in the initial lines of the build method
+
+    // can we eliminate ResourceBuilder?
+    return ResourceBuilder(
+      resource: $userProfile,
+      builder: (context, snapshot) {
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+            title: Text(widget.title),
+          ),
+          // can we eliminate SignalBuilder?
+          body: SignalBuilder(
+            signal: $userLoggedIn,
+            builder: (context, userLoggedIn, child) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    FilledButton(
+                      onPressed: userLoggedIn ? null : loginBob,
+                      child: const Text("Login Bob"),
+                    ),
+                    FilledButton(
+                      onPressed: userLoggedIn ? null : loginAlice,
+                      child: const Text("Login Alice"),
+                    ),
+                    FilledButton(
+                      onPressed: userLoggedIn ? logout : null,
+                      child: const Text("Logout"),
+                    ),
+                    // can we eliminate SignalBuilder?
+                    SignalBuilder(
+                      signal: $userId,
+                      builder: (context, value, child) {
+                        return Text(value ?? "Logged out");
+                      },
+                    ),
+                    Text(
+                      snapshot.maybeMap(
+                        // can we use a sealed class?
+                        ready: (x) =>
+                            x.value == null ? "Logged Out" : "${x.value?.name}",
+                        orElse: () => "Loading",
+                      ),
+                    ),
+                    ResourceBuilder(
+                      // can we eliminate ResourceBuilder?
+                      resource: $chatStream,
+                      builder: (context, snapshot) {
+                        final messages = snapshot.value;
+                        return Column(
+                          children: [
+                            if (messages != null)
+                              for (final item in messages)
+                                Text('${item.username}: ${item.message}')
+                          ],
+                        );
+                      },
+                    )
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

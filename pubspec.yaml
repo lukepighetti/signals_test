@@ -11,6 +11,7 @@ dependencies:
     sdk: flutter
 
   solidart: ^1.2.0
+  flutter_solidart: ^1.4.0
 
 dev_dependencies:
   flutter_test:
