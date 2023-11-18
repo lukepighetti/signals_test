@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:solidart/solidart.dart';
 
+import 'architecture.dart';
+
 void loginAlice() {
   $userId.value = 'user-alice';
 }
@@ -17,7 +19,7 @@ final $userId = Signal<String?>(null);
 
 final $userLoggedIn = Computed(() => $userId.value != null);
 
-final $userProfile = Resource<({String userId, String name})?>(
+final $userProfile = FutureSignal(
   fetcher: () async {
     final uid = $userId.value;
 
@@ -31,7 +33,6 @@ final $userProfile = Resource<({String userId, String name})?>(
       _ => null,
     };
   },
-  source: $userId,
 );
 
 final $selectedChannelId = Signal<String?>(null);

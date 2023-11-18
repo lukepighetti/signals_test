@@ -36,14 +36,19 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
-    // We were able to create a Slot that reacts to Signal / Computed but 
-    // not Resource. Also, we keep getting a Solidart exception on hot reload
+    // We were able to create a Slot that reacts to Signal / Computed but
+    // not Resource.
+    //
+    // Also, we keep getting a Solidart exception on hot reload
     // when we're refactoring ResourceBuilder/SignalBuilder to Slot
+    //
+    // SolidartCaughtException (SolidartException: SolidartException: 'package:flutter/src/widgets/framework.dart': Failed assertion: line 5004 pos 12: '_lifecycleState != _ElementLifecycle.defunct': is not true.)
     return Slot(
       builder: (context) {
-        final userProfile = $userProfile.state.value; // this isn't updating
+        final userProfile = $userProfile.value; // this isn't updating
         final userLoggedIn = $userLoggedIn.value;
         final userId = $userId.value;
+        print('rebuild');
 
         return Scaffold(
           appBar: AppBar(
@@ -68,9 +73,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: const Text("Logout"),
                 ),
                 Text(userId ?? "Logged out"),
-                Text(
-                  userProfile == null ? "Logged Out" : userProfile.name,
-                ),
+                Text(switch (userProfile) {
+                  Success(:final value) => value?.name ?? "Logged out",
+                  Loading(:final value) => value?.name ?? "Loading",
+                  _ => "Loading",
+                }),
                 Slot(
                   builder: (context) {
                     // This isn't updating
