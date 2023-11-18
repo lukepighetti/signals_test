@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_solidart/flutter_solidart.dart';
 import 'package:signals_test/state.dart';
 
+import 'architecture.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -34,72 +36,57 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
-    // I think we should be able to have a top level widget that automatically
-    // subscribes to all of the Signals / Computed / Resources accessed
-    // in the initial lines of the build method
+    // We were able to create a Slot that reacts to Signal / Computed but 
+    // not Resource. Also, we keep getting a Solidart exception on hot reload
+    // when we're refactoring ResourceBuilder/SignalBuilder to Slot
+    return Slot(
+      builder: (context) {
+        final userProfile = $userProfile.state.value; // this isn't updating
+        final userLoggedIn = $userLoggedIn.value;
+        final userId = $userId.value;
 
-    // can we eliminate ResourceBuilder?
-    return ResourceBuilder(
-      resource: $userProfile,
-      builder: (context, snapshot) {
         return Scaffold(
           appBar: AppBar(
             backgroundColor: Theme.of(context).colorScheme.inversePrimary,
             title: Text(widget.title),
           ),
           // can we eliminate SignalBuilder?
-          body: SignalBuilder(
-            signal: $userLoggedIn,
-            builder: (context, userLoggedIn, child) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    FilledButton(
-                      onPressed: userLoggedIn ? null : loginBob,
-                      child: const Text("Login Bob"),
-                    ),
-                    FilledButton(
-                      onPressed: userLoggedIn ? null : loginAlice,
-                      child: const Text("Login Alice"),
-                    ),
-                    FilledButton(
-                      onPressed: userLoggedIn ? logout : null,
-                      child: const Text("Logout"),
-                    ),
-                    // can we eliminate SignalBuilder?
-                    SignalBuilder(
-                      signal: $userId,
-                      builder: (context, value, child) {
-                        return Text(value ?? "Logged out");
-                      },
-                    ),
-                    Text(
-                      snapshot.maybeMap(
-                        // can we use a sealed class?
-                        ready: (x) =>
-                            x.value == null ? "Logged Out" : "${x.value?.name}",
-                        orElse: () => "Loading",
-                      ),
-                    ),
-                    ResourceBuilder(
-                      // can we eliminate ResourceBuilder?
-                      resource: $chatStream,
-                      builder: (context, snapshot) {
-                        final messages = snapshot.value;
-                        return Column(
-                          children: [
-                            if (messages != null)
-                              for (final item in messages)
-                                Text('${item.username}: ${item.message}')
-                          ],
-                        );
-                      },
-                    )
-                  ],
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                FilledButton(
+                  onPressed: userLoggedIn ? null : loginBob,
+                  child: const Text("Login Bob"),
                 ),
-              );
-            },
+                FilledButton(
+                  onPressed: userLoggedIn ? null : loginAlice,
+                  child: const Text("Login Alice"),
+                ),
+                FilledButton(
+                  onPressed: userLoggedIn ? logout : null,
+                  child: const Text("Logout"),
+                ),
+                Text(userId ?? "Logged out"),
+                Text(
+                  userProfile == null ? "Logged Out" : userProfile.name,
+                ),
+                Slot(
+                  builder: (context) {
+                    // This isn't updating
+                    final messages = $chatStream.state.value;
+
+                    return Column(
+                      children: [
+                        if (messages != null)
+                          for (final item in messages)
+                            Text('${item.username}: ${item.message}')
+                      ],
+                    );
+                  },
+                )
+              ],
+            ),
           ),
         );
       },
